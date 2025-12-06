@@ -1,0 +1,410 @@
+using System.Diagnostics;
+using System.Text.Json;
+
+namespace ICE12A
+{
+        public enum FormType
+        {
+            Splash,
+            Start,
+            Selection,
+            Next,
+            Final,
+            About
+        }
+
+        
+
+        // Create a struct to hold character data
+        public struct CharacterData
+        {
+            public string AGL;
+            public string STR;
+            public string VGR;
+            public string PER;
+            public string INT;
+            public string WIL;
+            public string CharacterName;
+            public string Species;
+            public string Career;
+        }
+
+
+    internal static class Program
+    {
+        public static SplashForm SplashForm;
+        public static StartForm StartForm;
+        public static SelectionForm SelectionForm;
+        public static NextForm NextForm;
+        public static FinalForm FinalForm;
+        public static AboutForm AboutForm;
+
+        public static List<Form> Forms;
+
+        private static bool IsExiting = false;
+
+        public static bool HasLoadedCharacter = false;
+
+        public static string DownloadsFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),"Downloads");
+
+        [STAThread]
+        static void Main()
+        {
+
+            ApplicationConfiguration.Initialize();
+
+            SplashForm = new SplashForm();
+            StartForm = new StartForm();
+            SelectionForm = new SelectionForm();
+            NextForm = new NextForm();
+            FinalForm = new FinalForm();
+            AboutForm = new AboutForm();
+
+            Forms =
+            [
+                SplashForm,
+                StartForm,
+                SelectionForm,
+                NextForm,
+                FinalForm,
+                AboutForm
+            ];
+
+            Application.Run(SplashForm);
+        }
+
+        /// <summary>
+        /// This method confirms exit with the user.
+        /// </summary>
+        /// <param name="e"></param>
+        public static void ConfirmExit(FormClosingEventArgs e)
+        {
+            if (IsExiting)
+            {
+                return;
+            }
+
+            var result = MessageBox.Show("Are you sure you want to exit?", "Confirm Exit", MessageBoxButtons.YesNo);
+            if (result == DialogResult.No)
+            {
+                e.Cancel = true;
+            }
+            else
+            {
+                IsExiting = true;
+                Application.Exit();
+            }
+        }
+
+        /// <summary>
+        ///  This method saves character data to a text file.
+        /// </summary>
+        /// <param name="path"></param>
+        public static void SaveCharacter(string path)
+        {
+            using StreamWriter writer = new StreamWriter(path);
+
+            writer.WriteLine(Settings.Default.AGL);
+            writer.WriteLine(Settings.Default.STR);
+            writer.WriteLine(Settings.Default.VGR);
+            writer.WriteLine(Settings.Default.PER);
+            writer.WriteLine(Settings.Default.INT);
+            writer.WriteLine(Settings.Default.WIL);
+            writer.WriteLine(Settings.Default.CharacterName);
+            writer.WriteLine(Settings.Default.Species);
+            writer.WriteLine(Settings.Default.Career);
+        }
+
+        /// <summary>
+        /// This method loads character data from a text file.
+        /// </summary>
+        /// <param name="path"></param>
+        public static bool LoadCharacter(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    throw new FileNotFoundException("Character File does not exist");
+                }
+                FileInfo info = new FileInfo(path);
+                if (info.Length == 0)
+                {
+                    throw new FileFormatException("Character file is empty");
+                }
+                string[] lines = File.ReadAllLines(path);
+                if (lines.Length < Settings.Default.Properties.Count)
+                {
+                    throw new FileFormatException("Invalid Character file");
+                }
+
+                CharacterData characterData;
+
+                using StreamReader reader = new StreamReader(path);
+                characterData.AGL = reader.ReadLine();
+                characterData.STR = reader.ReadLine();
+                characterData.VGR = reader.ReadLine();
+                characterData.PER = reader.ReadLine();
+                characterData.INT = reader.ReadLine();
+                characterData.WIL = reader.ReadLine();
+                characterData.CharacterName = reader.ReadLine();
+                characterData.Species = reader.ReadLine();
+                characterData.Career = reader.ReadLine();
+                if (characterData.AGL == null || characterData.STR == null
+                         || characterData.VGR == null || characterData.PER == null
+                         || characterData.INT == null || characterData.WIL == null
+                         || characterData.CharacterName == null || characterData.Species == null
+                         || characterData.Career == null)
+                {
+                    throw new FileFormatException("Invalid Character file");
+                }
+
+                Settings.Default.AGL = characterData.AGL;
+                Settings.Default.STR = characterData.STR;
+                Settings.Default.VGR = characterData.VGR;
+                Settings.Default.PER = characterData.PER;
+                Settings.Default.INT = characterData.INT;
+                Settings.Default.WIL = characterData.WIL;
+                Settings.Default.CharacterName = characterData.CharacterName;
+                Settings.Default.Species = characterData.Species;
+                Settings.Default.Career = characterData.Career;
+                return true;
+
+            }
+            catch (FileNotFoundException e)
+            {
+                ShowToast("File Not Found: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (FileFormatException e)
+            {
+                ShowToast("Format Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (Exception e)
+            {
+                ShowToast("Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// This method shows a toast notification.
+        /// </summary>
+        /// <param name="message"></param>
+        /// <param name="type"></param>
+        public static void ShowToast(string message, ToastType type = ToastType.Success)
+        {
+            const int padding = 20;
+
+            ToastForm toast = new ToastForm(message, type);
+
+            // Determine the area to center the toast in
+            Rectangle area = Form.ActiveForm.Bounds;
+
+            // Calculate the position to center the toast at the top of the area
+            int x = area.Left + (area.Width - toast.Width) / 2;
+            int y = area.Top + padding;
+
+            // Set the location of the toast and show it
+            toast.Location = new Point(x, y);
+            toast.TopMost = true;
+            toast.Show(Form.ActiveForm);
+        }
+
+        /// <summary>
+        /// This method saves character data to a binary file.
+        /// </summary>
+        /// <param name="path"></param>
+        public static void SaveCharacterBinary(string path)
+        {
+            // Create or overwrite the file
+            FileStream filestream = new FileStream(path, FileMode.OpenOrCreate);
+
+            // Create a BinaryWriter to write to the file
+            using BinaryWriter writer = new BinaryWriter(filestream);
+
+            // Write each setting to the file (use empty string if null)
+            writer.Write(Settings.Default.AGL ?? "");
+            writer.Write(Settings.Default.STR ?? "");
+            writer.Write(Settings.Default.VGR ?? "");
+            writer.Write(Settings.Default.PER ?? "");
+            writer.Write(Settings.Default.INT ?? "");
+            writer.Write(Settings.Default.WIL ?? "");
+            writer.Write(Settings.Default.CharacterName ?? "");
+            writer.Write(Settings.Default.Species ?? "");
+            writer.Write(Settings.Default.Career ?? "");
+        }
+
+        /// <summary>
+        /// This method loads character data from a binary file.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
+        public static bool LoadCharacterBinary(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    throw new FileNotFoundException("Character File does not exist");
+                }
+
+                FileInfo info = new FileInfo(path);
+                if (info.Length == 0)
+                {
+                    throw new FileFormatException("Character file is empty");
+                }
+
+                CharacterData characterData;
+                FileStream fileStream = new FileStream(path, FileMode.Open);
+                using BinaryReader reader = new BinaryReader(fileStream);
+
+                characterData.AGL = reader.ReadString();
+                characterData.STR = reader.ReadString();
+                characterData.VGR = reader.ReadString();
+                characterData.PER = reader.ReadString();
+                characterData.INT = reader.ReadString();
+                characterData.WIL = reader.ReadString();
+                characterData.CharacterName = reader.ReadString();
+                characterData.Species = reader.ReadString();
+                characterData.Career = reader.ReadString();
+
+                if (characterData.AGL == null || characterData.STR == null || characterData.VGR == null ||
+                    characterData.PER == null || characterData.INT == null || characterData.WIL == null ||
+                    characterData.CharacterName == null || characterData.Species == null ||
+                    characterData.Career == null)
+                {
+                    throw new FileFormatException("Invalid Character file");
+                }
+                Settings.Default.AGL = characterData.AGL;
+                Settings.Default.STR = characterData.STR;
+                Settings.Default.VGR = characterData.VGR;
+                Settings.Default.PER = characterData.PER;
+                Settings.Default.INT = characterData.INT;
+                Settings.Default.WIL = characterData.WIL;
+                Settings.Default.CharacterName = characterData.CharacterName;
+                Settings.Default.Species = characterData.Species;
+                Settings.Default.Career = characterData.Career;
+
+                return true;
+            }
+            catch (FileNotFoundException e)
+            {
+                ShowToast("File Not Found: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (FileFormatException e)
+            {
+                ShowToast("Format Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (Exception e)
+            {
+                ShowToast("Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// This method returns JSON serialization options.
+        /// </summary>
+        /// <returns></returns>
+        public static JsonSerializerOptions GetJsonOptions()
+        {
+            JsonSerializerOptions options = new JsonSerializerOptions();
+
+            options.IncludeFields = true;
+            options.WriteIndented = true;
+            options.PropertyNameCaseInsensitive = true;
+            options.AllowTrailingCommas = true;
+            options.ReadCommentHandling = JsonCommentHandling.Skip;
+
+            return options;
+        }
+
+        /// <summary>
+        /// This method saves character data to a JSON file.
+        /// </summary>
+        /// <param name="path"></param>
+        public static void SaveCharacterJSON(string path)
+        {
+            CharacterData characterData;
+
+            characterData.AGL = Settings.Default.AGL ?? "";
+            characterData.STR = Settings.Default.STR ?? "";
+            characterData.VGR = Settings.Default.VGR ?? "";
+            characterData.PER = Settings.Default.PER ?? "";
+            characterData.INT = Settings.Default.INT ?? "";
+            characterData.WIL = Settings.Default.WIL ?? "";
+            characterData.CharacterName = Settings.Default.CharacterName ?? "";
+            characterData.Species = Settings.Default.Species ?? "";
+            characterData.Career = Settings.Default.Career ?? "";
+
+            // Serialize to JSON
+            string jsonData = JsonSerializer.Serialize(characterData, GetJsonOptions());
+
+            // Write to file
+            File.WriteAllText(path, jsonData);
+        }
+
+        public static bool LoadCharacterJSON(string path)
+        {
+            try
+            {
+                if (!File.Exists(path))
+                {
+                    throw new FileNotFoundException("Character File does not exist");
+                }
+
+                // Load the JSON content from the file
+                string json = File.ReadAllText(path);
+
+                // Deserialize the JSON back into CharacterData struct
+                CharacterData characterData = JsonSerializer.Deserialize<CharacterData>(json, GetJsonOptions());
+
+                // Extra validation: check for null or empty strings if you like
+                if (characterData.AGL == null || characterData.STR == null || characterData.VGR == null ||
+                    characterData.PER == null || characterData.INT == null || characterData.WIL == null ||
+                    characterData.CharacterName == null || characterData.Species == null ||
+                    characterData.Career == null)
+                {
+                    throw new FileFormatException("Invalid Character file");
+                }
+
+                // Assign values back to Settings
+                Settings.Default.AGL = characterData.AGL;
+                Settings.Default.STR = characterData.STR;
+                Settings.Default.VGR = characterData.VGR;
+                Settings.Default.PER = characterData.PER;
+                Settings.Default.INT = characterData.INT;
+                Settings.Default.WIL = characterData.WIL;
+                Settings.Default.CharacterName = characterData.CharacterName;
+                Settings.Default.Species = characterData.Species;
+                Settings.Default.Career = characterData.Career;
+                return true;
+            }
+            catch (FileNotFoundException e)
+            {
+                ShowToast("File Not Found: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (FileFormatException e)
+            {
+                ShowToast("Format Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (JsonException e)
+            {
+                ShowToast("JSON Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+            catch (Exception e)
+            {
+                ShowToast("Error: " + e.Message, ToastType.Danger);
+                return false;
+            }
+        }
+
+    }
+}
