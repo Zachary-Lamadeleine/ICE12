@@ -138,7 +138,8 @@ namespace ICE12A
                     throw new FileFormatException("Invalid Character file");
                 }
 
-                CharacterData characterData;
+                //CharacterData characterData;
+                Character characterData = new Character();
 
                 using StreamReader reader = new StreamReader(path);
                 characterData.AGL = reader.ReadLine();
@@ -147,13 +148,13 @@ namespace ICE12A
                 characterData.PER = reader.ReadLine();
                 characterData.INT = reader.ReadLine();
                 characterData.WIL = reader.ReadLine();
-                characterData.CharacterName = reader.ReadLine();
+                characterData.Name = reader.ReadLine();
                 characterData.Species = reader.ReadLine();
                 characterData.Career = reader.ReadLine();
                 if (characterData.AGL == null || characterData.STR == null
                          || characterData.VGR == null || characterData.PER == null
                          || characterData.INT == null || characterData.WIL == null
-                         || characterData.CharacterName == null || characterData.Species == null
+                         || characterData.Name == null || characterData.Species == null
                          || characterData.Career == null)
                 {
                     throw new FileFormatException("Invalid Character file");
@@ -165,7 +166,7 @@ namespace ICE12A
                 Settings.Default.PER = characterData.PER;
                 Settings.Default.INT = characterData.INT;
                 Settings.Default.WIL = characterData.WIL;
-                Settings.Default.CharacterName = characterData.CharacterName;
+                Settings.Default.CharacterName = characterData.Name;
                 Settings.Default.Species = characterData.Species;
                 Settings.Default.Career = characterData.Career;
                 return true;
