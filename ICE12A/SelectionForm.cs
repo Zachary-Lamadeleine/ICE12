@@ -2,13 +2,7 @@ using System.Diagnostics;
 
 namespace ICE12A
 {
-    enum Career
-    {
-        Army,
-        Psion,
-        Rogue,
-        Telepath
-    }
+   
     public partial class SelectionForm : Form
     {
         // Variable Setup

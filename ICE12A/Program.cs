@@ -3,31 +3,12 @@ using System.Text.Json;
 
 namespace ICE12A
 {
-        public enum FormType
-        {
-            Splash,
-            Start,
-            Selection,
-            Next,
-            Final,
-            About
-        }
+      
 
         
 
         // Create a struct to hold character data
-        public struct CharacterData
-        {
-            public string AGL;
-            public string STR;
-            public string VGR;
-            public string PER;
-            public string INT;
-            public string WIL;
-            public string CharacterName;
-            public string Species;
-            public string Career;
-        }
+       
 
 
     internal static class Program
@@ -330,7 +311,7 @@ namespace ICE12A
         /// <param name="path"></param>
         public static void SaveCharacterJSON(string path)
         {
-            CharacterData characterData;
+            Character characterData = new Character();
 
             characterData.AGL = Settings.Default.AGL ?? "";
             characterData.STR = Settings.Default.STR ?? "";
@@ -338,7 +319,7 @@ namespace ICE12A
             characterData.PER = Settings.Default.PER ?? "";
             characterData.INT = Settings.Default.INT ?? "";
             characterData.WIL = Settings.Default.WIL ?? "";
-            characterData.CharacterName = Settings.Default.CharacterName ?? "";
+            characterData.Name = Settings.Default.CharacterName ?? "";
             characterData.Species = Settings.Default.Species ?? "";
             characterData.Career = Settings.Default.Career ?? "";
 
